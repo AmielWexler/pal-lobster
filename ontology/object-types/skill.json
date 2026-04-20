@@ -1,0 +1,64 @@
+{
+  "apiName": "lobster-skill",
+  "displayName": "Skill",
+  "description": "A stored skill or tool available to OpenClaw agents.",
+  "pluralDisplayName": "Skills",
+  "properties": {
+    "skillId": {
+      "apiName": "skillId",
+      "displayName": "Skill ID",
+      "type": "string",
+      "primaryKey": true
+    },
+    "name": {
+      "apiName": "name",
+      "displayName": "Name",
+      "type": "string"
+    },
+    "description": {
+      "apiName": "description",
+      "displayName": "Description",
+      "type": "long_text",
+      "description": "Natural language description used by the agent to decide when to use this skill"
+    },
+    "skillType": {
+      "apiName": "skillType",
+      "displayName": "Skill Type",
+      "type": "string",
+      "description": "One of: function, workflow, browser, shell, ontology_query"
+    },
+    "codeOrConfig": {
+      "apiName": "codeOrConfig",
+      "displayName": "Code or Config",
+      "type": "long_text",
+      "description": "The skill implementation as code or JSON config"
+    },
+    "inputSchema": {
+      "apiName": "inputSchema",
+      "displayName": "Input Schema",
+      "type": "long_text",
+      "description": "JSON Schema for the skill's input parameters"
+    },
+    "ownerId": {
+      "apiName": "ownerId",
+      "displayName": "Owner User RID",
+      "type": "string"
+    },
+    "isShared": {
+      "apiName": "isShared",
+      "displayName": "Is Shared",
+      "type": "boolean",
+      "description": "Whether this skill is available to all agents or only the owner's"
+    },
+    "createdAt": {
+      "apiName": "createdAt",
+      "displayName": "Created At",
+      "type": "timestamp"
+    },
+    "updatedAt": {
+      "apiName": "updatedAt",
+      "displayName": "Updated At",
+      "type": "timestamp"
+    }
+  }
+}

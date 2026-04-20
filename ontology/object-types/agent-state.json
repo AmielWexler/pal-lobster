@@ -1,0 +1,62 @@
+{
+  "apiName": "lobster-agent-state",
+  "displayName": "Agent State",
+  "description": "Configuration and runtime state for an OpenClaw agent instance.",
+  "pluralDisplayName": "Agent States",
+  "properties": {
+    "agentId": {
+      "apiName": "agentId",
+      "displayName": "Agent ID",
+      "type": "string",
+      "primaryKey": true
+    },
+    "name": {
+      "apiName": "name",
+      "displayName": "Name",
+      "type": "string"
+    },
+    "status": {
+      "apiName": "status",
+      "displayName": "Status",
+      "type": "string",
+      "description": "One of: running, idle, error, stopped"
+    },
+    "configJson": {
+      "apiName": "configJson",
+      "displayName": "Config JSON",
+      "type": "long_text",
+      "description": "Full agent configuration as a JSON string"
+    },
+    "model": {
+      "apiName": "model",
+      "displayName": "Model",
+      "type": "string"
+    },
+    "systemPrompt": {
+      "apiName": "systemPrompt",
+      "displayName": "System Prompt",
+      "type": "long_text"
+    },
+    "ownerId": {
+      "apiName": "ownerId",
+      "displayName": "Owner User RID",
+      "type": "string"
+    },
+    "createdAt": {
+      "apiName": "createdAt",
+      "displayName": "Created At",
+      "type": "timestamp"
+    },
+    "lastActiveAt": {
+      "apiName": "lastActiveAt",
+      "displayName": "Last Active At",
+      "type": "timestamp"
+    },
+    "errorMessage": {
+      "apiName": "errorMessage",
+      "displayName": "Error Message",
+      "type": "long_text",
+      "description": "Last error message if status=error"
+    }
+  }
+}

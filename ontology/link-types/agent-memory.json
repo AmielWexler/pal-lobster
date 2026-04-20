@@ -1,0 +1,16 @@
+{
+  "apiName": "lobster-agent-memory",
+  "displayName": "Agent → Memory Chunks",
+  "description": "Links an Agent State to its long-term Memory Chunks.",
+  "objectTypeA": "lobster-agent-state",
+  "objectTypeB": "lobster-memory-chunk",
+  "cardinality": "ONE_TO_MANY",
+  "linkPropertyA": {
+    "displayName": "Memory Chunks",
+    "apiName": "memoryChunks"
+  },
+  "linkPropertyB": {
+    "displayName": "Agent",
+    "apiName": "agent"
+  }
+}

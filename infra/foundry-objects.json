@@ -1,0 +1,81 @@
+{
+  "project": {
+    "rid": "ri.compass.main.folder.a22ab25f-e459-4512-97ae-fc10bd2d24ca",
+    "name": "Lobster pal",
+    "foundryInstance": "accenture.palantirfoundry.com"
+  },
+  "ontology": {
+    "rid": "ri.ontology.main.ontology.a4c72975-6b1e-4c42-88b0-523b9870ad84",
+    "displayName": "APBG-Dev Ontology",
+    "namespace": "vahej4tu",
+    "bootstrapBranch": "ri.branch..branch.1c833016-713a-4242-8ec5-8bfca63ffbc4",
+    "mergeProposal": {
+      "rid": "ri.branch..proposal.a931a2f1-c821-45a2-9bef-db6c6f9e460e",
+      "url": "https://accenture.palantirfoundry.com/workspace/developer-branching/proposal/ri.branch..proposal.a931a2f1-c821-45a2-9bef-db6c6f9e460e",
+      "status": "OPEN — needs manual approval in Foundry UI"
+    }
+  },
+  "objectTypes": {
+    "lobster-conversation": {
+      "objectTypeId": "vahej4tu.lobster-conversation",
+      "backingDataset": "ri.foundry.main.dataset.a41cdaa5-a6e0-4314-bc75-a533042a7d2f"
+    },
+    "lobster-message": {
+      "objectTypeId": "vahej4tu.lobster-message",
+      "backingDataset": "ri.foundry.main.dataset.c8ef81bd-515f-4eff-9796-9806b173f08a"
+    },
+    "lobster-agent-state": {
+      "objectTypeId": "vahej4tu.lobster-agent-state",
+      "backingDataset": "ri.foundry.main.dataset.17f1b457-d2af-4e6e-90b7-77fbdc3e39df"
+    },
+    "lobster-skill": {
+      "objectTypeId": "vahej4tu.lobster-skill",
+      "backingDataset": "ri.foundry.main.dataset.6c78316f-5745-4d3e-a850-4937ec107945"
+    },
+    "lobster-memory-chunk": {
+      "objectTypeId": "vahej4tu.lobster-memory-chunk",
+      "backingDataset": "ri.foundry.main.dataset.c160bcbc-f553-479d-8887-be998c52f7d7"
+    }
+  },
+  "linkTypes": {
+    "lobster-conversation-messages": {
+      "linkTypeId": "vahej4tu.lobster-conversation-messages",
+      "rid": "ri.ontology.main.relation.73f0f7c0-f37e-4443-a038-ddb172662978",
+      "cardinality": "ONE_TO_MANY"
+    },
+    "lobster-agent-skills": {
+      "linkTypeId": "vahej4tu.lobster-agent-skills",
+      "rid": "ri.ontology.main.relation.a25fcc5b-3ae4-...",
+      "cardinality": "MANY_TO_MANY",
+      "junctionDataset": "ri.foundry.main.dataset.287d8b03-680a-453b-9f62-aea104af6473"
+    },
+    "lobster-agent-memory": {
+      "linkTypeId": "vahej4tu.lobster-agent-memory",
+      "rid": "ri.ontology.main.relation.0af7576d-cf3...",
+      "cardinality": "ONE_TO_MANY"
+    }
+  },
+  "pendingManualSteps": {
+    "computeModule": {
+      "action": "Create manually in Foundry Developer Console",
+      "name": "lobster-openclaw-cm",
+      "displayName": "OpenClaw Compute Module",
+      "projectFolder": "ri.compass.main.folder.a22ab25f-e459-4512-97ae-fc10bd2d24ca",
+      "note": "No palantir-mcp tool exists for CM creation; must be done in Foundry UI"
+    },
+    "osdkApp": {
+      "action": "Create manually in Foundry Developer Console",
+      "name": "lobster-openclaw-ui",
+      "displayName": "OpenClaw UI",
+      "projectFolder": "ri.compass.main.folder.a22ab25f-e459-4512-97ae-fc10bd2d24ca",
+      "ontologyObjects": [
+        "vahej4tu.lobster-conversation",
+        "vahej4tu.lobster-message",
+        "vahej4tu.lobster-agent-state",
+        "vahej4tu.lobster-skill",
+        "vahej4tu.lobster-memory-chunk"
+      ],
+      "note": "connect_to_dev_console_app requires an existing app RID; creation must be done in UI"
+    }
+  }
+}

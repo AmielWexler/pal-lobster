@@ -1,0 +1,65 @@
+{
+  "apiName": "lobster-message",
+  "displayName": "Message",
+  "description": "An individual message within a Conversation.",
+  "pluralDisplayName": "Messages",
+  "properties": {
+    "messageId": {
+      "apiName": "messageId",
+      "displayName": "Message ID",
+      "type": "string",
+      "primaryKey": true
+    },
+    "conversationId": {
+      "apiName": "conversationId",
+      "displayName": "Conversation ID",
+      "type": "string",
+      "description": "Foreign key to the parent Conversation"
+    },
+    "role": {
+      "apiName": "role",
+      "displayName": "Role",
+      "type": "string",
+      "description": "One of: user, assistant, system, tool"
+    },
+    "content": {
+      "apiName": "content",
+      "displayName": "Content",
+      "type": "long_text",
+      "description": "Full text content of the message"
+    },
+    "timestamp": {
+      "apiName": "timestamp",
+      "displayName": "Timestamp",
+      "type": "timestamp"
+    },
+    "tokenCount": {
+      "apiName": "tokenCount",
+      "displayName": "Token Count",
+      "type": "integer"
+    },
+    "model": {
+      "apiName": "model",
+      "displayName": "Model",
+      "type": "string"
+    },
+    "toolName": {
+      "apiName": "toolName",
+      "displayName": "Tool Name",
+      "type": "string",
+      "description": "For role=tool, the name of the tool that was called"
+    },
+    "toolCallId": {
+      "apiName": "toolCallId",
+      "displayName": "Tool Call ID",
+      "type": "string",
+      "description": "ID linking a tool call to its result"
+    },
+    "latencyMs": {
+      "apiName": "latencyMs",
+      "displayName": "Latency (ms)",
+      "type": "integer",
+      "description": "Time taken to generate this message in milliseconds"
+    }
+  }
+}

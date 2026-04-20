@@ -1,0 +1,60 @@
+{
+  "apiName": "lobster-memory-chunk",
+  "displayName": "Memory Chunk",
+  "description": "A fragment of long-term memory for an agent, enabling semantic recall.",
+  "pluralDisplayName": "Memory Chunks",
+  "properties": {
+    "chunkId": {
+      "apiName": "chunkId",
+      "displayName": "Chunk ID",
+      "type": "string",
+      "primaryKey": true
+    },
+    "agentId": {
+      "apiName": "agentId",
+      "displayName": "Agent ID",
+      "type": "string",
+      "description": "The agent that owns this memory chunk"
+    },
+    "userId": {
+      "apiName": "userId",
+      "displayName": "User RID",
+      "type": "string",
+      "description": "Optional: user-scoped memory (per-user per-agent)"
+    },
+    "content": {
+      "apiName": "content",
+      "displayName": "Content",
+      "type": "long_text",
+      "description": "The memory text content — indexed for semantic search"
+    },
+    "source": {
+      "apiName": "source",
+      "displayName": "Source",
+      "type": "string",
+      "description": "Where this memory came from: conversation_id, manual, skill_output"
+    },
+    "sourceId": {
+      "apiName": "sourceId",
+      "displayName": "Source ID",
+      "type": "string",
+      "description": "ID of the source object (e.g. conversationId)"
+    },
+    "importance": {
+      "apiName": "importance",
+      "displayName": "Importance Score",
+      "type": "float",
+      "description": "0.0–1.0 score used to rank memories during retrieval"
+    },
+    "createdAt": {
+      "apiName": "createdAt",
+      "displayName": "Created At",
+      "type": "timestamp"
+    },
+    "lastAccessedAt": {
+      "apiName": "lastAccessedAt",
+      "displayName": "Last Accessed At",
+      "type": "timestamp"
+    }
+  }
+}

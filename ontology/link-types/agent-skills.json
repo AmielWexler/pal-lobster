@@ -1,0 +1,16 @@
+{
+  "apiName": "lobster-agent-skills",
+  "displayName": "Agent → Skills",
+  "description": "Links an Agent State to the Skills it has access to.",
+  "objectTypeA": "lobster-agent-state",
+  "objectTypeB": "lobster-skill",
+  "cardinality": "MANY_TO_MANY",
+  "linkPropertyA": {
+    "displayName": "Skills",
+    "apiName": "skills"
+  },
+  "linkPropertyB": {
+    "displayName": "Agents",
+    "apiName": "agents"
+  }
+}

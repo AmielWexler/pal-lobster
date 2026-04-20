@@ -1,0 +1,16 @@
+{
+  "apiName": "lobster-conversation-messages",
+  "displayName": "Conversation → Messages",
+  "description": "Links a Conversation to its child Messages.",
+  "objectTypeA": "lobster-conversation",
+  "objectTypeB": "lobster-message",
+  "cardinality": "ONE_TO_MANY",
+  "linkPropertyA": {
+    "displayName": "Messages",
+    "apiName": "messages"
+  },
+  "linkPropertyB": {
+    "displayName": "Conversation",
+    "apiName": "conversation"
+  }
+}

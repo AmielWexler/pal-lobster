@@ -1,0 +1,58 @@
+{
+  "apiName": "lobster-conversation",
+  "displayName": "Conversation",
+  "description": "A chat conversation session between a user and the OpenClaw agent.",
+  "pluralDisplayName": "Conversations",
+  "properties": {
+    "conversationId": {
+      "apiName": "conversationId",
+      "displayName": "Conversation ID",
+      "type": "string",
+      "primaryKey": true
+    },
+    "title": {
+      "apiName": "title",
+      "displayName": "Title",
+      "type": "string"
+    },
+    "userId": {
+      "apiName": "userId",
+      "displayName": "User RID",
+      "type": "string",
+      "description": "Foundry user RID of the conversation owner"
+    },
+    "model": {
+      "apiName": "model",
+      "displayName": "Model",
+      "type": "string",
+      "description": "LLM model used for this conversation (e.g. claude-3-5-sonnet)"
+    },
+    "createdAt": {
+      "apiName": "createdAt",
+      "displayName": "Created At",
+      "type": "timestamp"
+    },
+    "updatedAt": {
+      "apiName": "updatedAt",
+      "displayName": "Updated At",
+      "type": "timestamp"
+    },
+    "slackChannelId": {
+      "apiName": "slackChannelId",
+      "displayName": "Slack Channel ID",
+      "type": "string",
+      "description": "Slack channel ID if conversation originated from Slack"
+    },
+    "slackThreadTs": {
+      "apiName": "slackThreadTs",
+      "displayName": "Slack Thread Timestamp",
+      "type": "string",
+      "description": "Slack thread_ts used to correlate replies in the same thread"
+    },
+    "isActive": {
+      "apiName": "isActive",
+      "displayName": "Is Active",
+      "type": "boolean"
+    }
+  }
+}
