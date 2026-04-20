@@ -13,8 +13,10 @@ Production-grade deployment of [OpenClaw](https://github.com/openclaw/openclaw) 
 Container (linux/amd64, USER 5000)
 ├── supervisord
 │   ├── [priority 10]  FastAPI  :8080   ← chat API + LLM passthrough
-│   ├── [priority 15]  OpenClaw :18789  ← agent gateway (Node 22)
+│   ├── [priority 15]  OpenClaw :18789  ← agent gateway + built-in Control UI (Node 22)
 │   └── [priority 20]  CM handler       ← Foundry polling loop → FastAPI
+
+UI: OpenClaw's built-in Control UI served at :18789 (Lit web components — no separate frontend needed)
 
 LLM flow (OpenClaw → Foundry proxy):
   OpenClaw  →  POST localhost:8080/llm/proxy/anthropic/v1/messages
@@ -22,12 +24,11 @@ LLM flow (OpenClaw → Foundry proxy):
             →  Foundry /api/v2/llm/proxy/anthropic/v1/messages
 
 Chat flow (user → CM function):
-  Frontend OSDK  →  Foundry CM function "chat"
-                 →  handler.py (extracts context.auth_token)
-                 →  POST localhost:8080/chat  Bearer <user-token>
-                 →  FastAPI streams SSE
-                 →  [USE_OPENCLAW_GATEWAY=false] Foundry LLM proxy (OpenAI-compat)
-                 →  [USE_OPENCLAW_GATEWAY=true]  OpenClaw WS gateway
+  CM function "chat"  →  handler.py (extracts context.auth_token)
+                      →  POST localhost:8080/chat  Bearer <user-token>
+                      →  FastAPI streams SSE
+                      →  [USE_OPENCLAW_GATEWAY=false] Foundry LLM proxy (OpenAI-compat)
+                      →  [USE_OPENCLAW_GATEWAY=true]  OpenClaw WS gateway
 ```
 
 ---
@@ -64,7 +65,8 @@ pal-lobster/
 │       ├── api/chat.ts                    # streamChat() — CM or direct backend
 │       ├── hooks/                         # useFoundryAuth, useChat
 │       └── components/                    # ChatWindow, MessageList, MessageInput, Layout
-├── docker-compose.yml                     # local dev: FastAPI only (no supervisord)
+├── scripts/dev.sh                         # local dev launcher (no Docker): builds + starts FastAPI + OpenClaw
+├── docker-compose.yml                     # local dev: supervisord (FastAPI + OpenClaw), ports 8080 + 18789
 ├── LOCAL_DEV.md                           # full local dev guide
 ├── ontology/
 │   ├── object-types/                      # JSON schema definitions
@@ -92,53 +94,56 @@ pal-lobster/
 
 ## Local Development
 
-> **Full guide:** see [`LOCAL_DEV.md`](LOCAL_DEV.md) — includes two paths (bare Python and Docker), all env vars, curl smoke tests, and a troubleshooting section.
+> **Full guide:** see [`LOCAL_DEV.md`](LOCAL_DEV.md) — script, Docker, and manual options, plus troubleshooting.
 
-### Quick start (bare Python — no Docker)
+### Quick start (no Docker)
 
 ```bash
-# Terminal 1 — backend
-cd backend
-python3 -m venv .venv && source .venv/bin/activate
-pip install "fastapi[standard]" "uvicorn[standard]" "httpx[http2]" \
-    pydantic-settings websockets cryptography
-cp .env.example .env
-# → edit backend/.env: set MODULE_AUTH_TOKEN=<your Foundry token>
-uvicorn app.main:app --reload --port 8080
+git submodule update --init --recursive
+cp backend/.env.example backend/.env
+# Edit backend/.env — set MODULE_AUTH_TOKEN=<your Foundry personal token>
 
-# Terminal 2 — frontend
-cp frontend/.env.local.example frontend/.env.local
-cd frontend && npm install && npm run dev
-# → http://localhost:5173
+./scripts/dev.sh
 ```
 
-The frontend `VITE_DIRECT_BACKEND_URL=http://localhost:8080` setting in `.env.local` bypasses Foundry CM and hits FastAPI directly — no Foundry deployment needed to test chat.
+First run builds OpenClaw (~2 min). Then open **http://localhost:18789** for the Control UI.
+
+Get the dashboard token to connect:
+```bash
+cd backend/openclaw-src && node openclaw.mjs dashboard
+# → prints http://localhost:18789/?token=<token>  (open directly, or paste token into the UI)
+```
+
+> **Token note:** The Control UI's "Gateway Token" field is an auto-generated dashboard token, **not** `OPENCLAW_GATEWAY_TOKEN` from `.env`. Run `node openclaw.mjs dashboard` to get it.
 
 ### With Docker Compose
 
 ```bash
-git submodule update --init --recursive   # openclaw-src required for image build
+git submodule update --init --recursive
 cp backend/.env.example backend/.env
-# → edit backend/.env: set MODULE_AUTH_TOKEN=<your Foundry token>
+# Edit backend/.env — set MODULE_AUTH_TOKEN
 
-docker compose up --build    # or: docker-compose up --build
+docker compose up --build
 ```
 
-Backend available at http://localhost:8080. Run the frontend separately with `npm run dev`.
+Access Control UI at **http://localhost:18789**, FastAPI at **http://localhost:8080**.
 
 ---
 
 ## Docker Image (standalone)
 
 ```bash
-# Build from backend/ context
 cd backend
 docker build -t lobster-backend .
 
-# Run with just FastAPI (no supervisord)
+# Full stack via supervisord (FastAPI + OpenClaw UI)
+docker run --rm -p 8080:8080 -p 18789:18789 \
+  -e MODULE_AUTH_TOKEN=<token> \
+  -e OPENCLAW_GATEWAY_TOKEN=local-dev-secret \
+  lobster-backend
+
+# FastAPI only (no OpenClaw)
 docker run --rm -p 8080:8080 \
-  -e USE_OPENCLAW_GATEWAY=false \
-  -e CORS_ORIGINS=http://localhost:5173 \
   -e MODULE_AUTH_TOKEN=<token> \
   lobster-backend \
   python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
@@ -181,8 +186,8 @@ In production, `MODULE_AUTH_TOKEN` is injected automatically by the Foundry CM r
 |---|---|---|
 | 1 | Backend skeleton: FastAPI, LLM proxy, CM handler | ✅ Complete |
 | 2 | Ontology integration: dataset writes for chat history | ✅ Complete |
-| 3 | Frontend React/OSDK app | ✅ Complete |
-| 4 | OpenClaw gateway integration | ✅ Complete |
+| 3 | Frontend React/OSDK app | ✅ Complete (superseded by OpenClaw UI) |
+| 4 | OpenClaw gateway integration + built-in Control UI | ✅ Complete |
 | 5 | Slack Socket Mode | 🔲 Not started |
 | 6 | Observability + hardening | 🔲 Not started |
 
