@@ -34,17 +34,25 @@ Two separate auth paths — never mix them:
 ```
 [USE_OPENCLAW_GATEWAY=false]
   CM handler → FastAPI /chat → llm_proxy.py
-             → POST {foundry_url}/api/v2/llm/proxy/openai/v1/chat/completions  (OpenAI-compat)
+             → POST {foundry_url}/api/v2/llm/proxy/openai/v1/chat/completions
 
 [USE_OPENCLAW_GATEWAY=true]
   CM handler → FastAPI /chat → openclaw_gateway.py (WS to :18789)
-             → OpenClaw → POST localhost:8080/llm/proxy/openai/v1/messages
-             → llm_proxy_passthrough.py (injects MODULE_AUTH_TOKEN)
-             → POST {foundry_url}/api/v2/llm/proxy/openai/v1/messages
+             → OpenClaw → POST localhost:8080/llm/proxy/openai/v1/chat/completions
+             → llm_proxy_passthrough.py (injects MODULE_AUTH_TOKEN, strips unsupported fields)
+             → POST {foundry_url}/api/v2/llm/proxy/openai/v1/chat/completions
+
+OpenClaw Control UI (direct, no CM):
+  Browser → OpenClaw gateway (:18789)
+          → OpenClaw embedded agent → POST localhost:8080/llm/proxy/openai/v1/chat/completions
+          → llm_proxy_passthrough.py → Foundry LLM proxy
 ```
 
 ### Feature Flag
 `USE_OPENCLAW_GATEWAY` in `config.py` — defaults to `false` (direct LLM calls). Set to `true` to route through the OpenClaw subprocess (all Phase 4 code is in place).
+
+### Model
+Foundry's Language Model Service for this workspace only has **`gpt-4o`** registered. No Claude/Anthropic models are available via the proxy. OpenClaw is configured accordingly (`openai/gpt-4o` via `openai-completions` API type).
 
 ---
 
@@ -55,7 +63,7 @@ Two separate auth paths — never mix them:
 | Backend | Python 3.11, FastAPI, uvicorn, httpx[http2], pydantic-settings, compute-modules |
 | Agent gateway | OpenClaw (Node 22, TypeScript) — git submodule at `backend/openclaw-src/` |
 | UI | OpenClaw built-in Control UI (Lit web components, served by gateway on :18789) — primary UI |
-| Frontend (legacy) | React 18, TypeScript, Vite, Tailwind CSS, OSDK — superseded by OpenClaw UI |
+| Frontend (legacy) | React 18, TypeScript, Vite, Tailwind CSS, OSDK — **removed**, superseded by OpenClaw UI |
 | Real-time | SSE (`text/event-stream`) via POST + `ReadableStream` |
 | Container | `python:3.11-slim` + Node 22 via nodesource, supervisord, USER 5000 |
 | Storage | Foundry Ontology via Dataset Transaction API (JSONL append) |
@@ -70,6 +78,7 @@ pal-lobster/
 ├── backend/
 │   ├── Dockerfile                         # multi-stage: node:22-bookworm-slim + python:3.11-slim
 │   ├── supervisord.conf                   # 3-process supervisor (fastapi, openclaw, compute_module)
+│   ├── openclaw-setup.sh                  # writes models.json + auth-profiles.json + openclaw.json to ~/.openclaw/
 │   ├── pyproject.toml                     # deps: fastapi, uvicorn, httpx[http2], websockets>=12, cryptography>=42, compute-modules
 │   ├── openclaw-src/                      # git submodule → github.com/openclaw/openclaw
 │   ├── compute_module/handler.py          # Foundry @function chat(), health_check()
@@ -81,32 +90,11 @@ pal-lobster/
 │       ├── routers/
 │       │   ├── chat.py                    # POST /chat → SSE stream (branches on USE_OPENCLAW_GATEWAY)
 │       │   ├── health.py                  # GET /health → {"status":"ok"}
-│       │   └── llm_proxy_passthrough.py   # POST /llm/proxy/openai/v1/{path} (for OpenClaw's LLM calls)
+│       │   └── llm_proxy_passthrough.py   # POST /llm/proxy/openai/v1/{path} — injects MODULE_AUTH_TOKEN, strips unsupported fields
 │       └── services/
 │           ├── llm_proxy.py               # Foundry OpenAI-compat proxy, streaming, 429/503 handling
 │           ├── ontology.py                # Dataset transaction writes for chat history
 │           └── openclaw_gateway.py        # WebSocket client with ECDSA P-256 auth handshake
-├── frontend/
-│   ├── foundry.config.json                # OSDK app registration + OAuth config
-│   ├── .env.local.example                 # local dev overrides template (copy → .env.local)
-│   ├── vite.config.ts / tsconfig.json / tailwind.config.js / postcss.config.js
-│   └── src/
-│       ├── main.tsx / App.tsx             # entry + auth-gated root
-│       ├── foundry.ts                     # FOUNDRY_URL, APPLICATION_RID, CLIENT_ID, auth client
-│       ├── index.css                      # Tailwind base
-│       ├── api/
-│       │   ├── chat.ts                    # streamChat() — CM or direct backend (VITE_DIRECT_BACKEND_URL)
-│       │   └── types.ts                   # Message, ChatChunk
-│       ├── hooks/
-│       │   ├── useFoundryAuth.ts          # OAuth state machine (loading/unauth/auth/error)
-│       │   └── useChat.ts                 # message list + streaming delta accumulation
-│       └── components/
-│           ├── chat/
-│           │   ├── ChatWindow.tsx         # full chat UI wrapper
-│           │   ├── MessageList.tsx        # message bubbles + typing indicator
-│           │   └── MessageInput.tsx       # auto-resize textarea, Shift+Enter newline
-│           └── layout/
-│               └── Layout.tsx             # dark header shell
 ├── scripts/run-local-no-docker.sh         # local dev launcher: builds OpenClaw + starts FastAPI + gateway + opens dashboard
 ├── docker-compose.yml                     # local dev: supervisord (all processes), ports 8080 + 18789
 ├── LOCAL_DEV.md                           # step-by-step local dev guide
@@ -163,34 +151,19 @@ Link types: `lobster-conversation-messages` (1:many), `lobster-agent-skills` (ma
 - `app/routers/chat.py` wired to persist conversation + both message turns per request
 - **Validation**: After merge proposal approval + dataset build, confirm rows in Ontology Viewer
 
-### Phase 3 — Frontend React App ✅ (superseded by OpenClaw Control UI)
+### Phase 3 — Frontend React App ✅ (removed — superseded by OpenClaw Control UI)
 
-> **Note:** The preferred UI for local dev and production is now **OpenClaw's built-in Control UI** served at `:18789`. The React/OSDK app below remains functional but is no longer the primary interface. Use `./scripts/run-local-no-docker.sh` to start the full stack locally.
-
-### Phase 3 — Frontend React App ✅ (legacy reference)
-- React 18 + Vite + TypeScript + Tailwind CSS
-- `@osdk/oauth` for PKCE auth — `createPublicOauthClient(clientId, foundryUrl, redirectUri)`
-  - `auth()` → `Promise<string>` (access token; processes callback automatically)
-  - `auth.getTokenOrUndefined()` → current token without triggering sign-in
-  - `auth.signIn()` → triggers OAuth redirect
-  - `auth.refresh()` → refreshes token, returns `Token | undefined`
-- `src/api/chat.ts` — calls CM `chat` function via:
-  `POST {foundry_url}/api/v2/thirdPartyApplications/{applicationRid}/computeModules/functions/chat`
-  with `{"event": {messages, conversation_id, model, max_tokens}}`
-- Streaming via `fetch` + `ReadableStream` — handles both raw JSON chunks and SSE `data: {...}` lines
-- `useChat` hook — manages message list, streams deltas into assistant message, tracks `conversation_id`
-- `useFoundryAuth` hook — handles loading/callback/unauthenticated/authenticated states
-- **Local dev bypass**: set `VITE_DIRECT_BACKEND_URL=http://localhost:8080` in `frontend/.env.local` — `streamChat()` will POST to FastAPI directly instead of going through the Foundry CM endpoint (no CM deployment needed for local testing)
-- **Validation**: `cd frontend && npm run dev` → http://localhost:5173 → sign in → chat
-- **Deploy**: `npm run build` → upload `dist/` to Foundry Developer Console under the OSDK app
-- **Note**: CM function invocation endpoint may need verification in production — adjust `CM_CHAT_URL` in `src/api/chat.ts` if 404
+The `frontend/` directory has been deleted. The OpenClaw built-in Control UI at `:18789` is the primary interface. OSDK app RIDs are preserved in `infra/foundry-objects.json` if the React app is ever needed again.
 
 ### Phase 4 — OpenClaw Gateway Integration ✅
-- `app/routers/llm_proxy_passthrough.py` — intercepts OpenClaw's openai API calls, injects `MODULE_AUTH_TOKEN`
-- `app/services/openclaw_gateway.py` — WS client with full ECDSA challenge handshake
-- `supervisord.conf` — OpenClaw process with `OPENAI_BASE_URL=http://localhost:8080/llm/proxy/openai/v1`
-- `USE_OPENCLAW_GATEWAY=true` in config activates the path
-- **Fallback**: If Foundry lacks native openai endpoint, set `LLM_PROXY_openai_TRANSLATE=true`
+- `app/routers/llm_proxy_passthrough.py` — catches OpenClaw's OpenAI Chat Completions requests at `/llm/proxy/openai/v1/*`, injects `MODULE_AUTH_TOKEN`, strips fields Foundry rejects (`store`, `metadata`, `service_tier`, `parallel_tool_calls`), forwards to Foundry
+- `app/services/openclaw_gateway.py` — WS client with full ECDSA challenge handshake (used when `USE_OPENCLAW_GATEWAY=true`)
+- `backend/openclaw-setup.sh` — writes three files to `~/.openclaw/` before gateway starts:
+  - `agents/main/agent/models.json` — provider `openai`, `api: openai-completions`, `baseUrl: http://localhost:8080/llm/proxy/openai/v1`, model `gpt-4o`
+  - `agents/main/agent/auth-profiles.json` — profile `foundry-openai` with `apiKey: foundry-proxied` (real auth is the `MODULE_AUTH_TOKEN` injected by the passthrough)
+  - `openclaw.json` — default model set to `openai/gpt-4o`
+- `USE_OPENCLAW_GATEWAY=true` in config activates the WS path for CM-routed chat
+- **Model note**: Foundry's Language Model Service only has `gpt-4o` registered. No Claude models are available on this workspace's LLM proxy.
 
 ### Phase 5 — Slack 🔲
 - `slack/manifest.json`, Socket Mode client in `app/services/slack.py`
@@ -209,14 +182,14 @@ Link types: `lobster-conversation-messages` (1:many), `lobster-agent-skills` (ma
 ```python
 foundry_url: str = "https://accenture.palantirfoundry.com"
 llm_proxy_path: str = "/api/v2/llm/proxy/openai/v1/chat/completions"
-default_model: str = "claude-3-5-sonnet"
-use_openclaw_gateway: bool = False          # True → route chat through OpenClaw WS gateway
+default_model: str = "gpt-4o"              # only gpt-4o is registered on this Foundry workspace
+use_openclaw_gateway: bool = False          # True → route /chat through OpenClaw WS gateway
 openclaw_gateway_token: str = ""            # Foundry secret OPENCLAW_GATEWAY_TOKEN
 openclaw_port: int = 18789
-llm_proxy_openai_path: str = "/api/v2/llm/proxy/openai/v1"
-llm_proxy_openai_translate: bool = False # fallback if Foundry lacks openai endpoint
 cors_origins: list[str] = []               # e.g. ["http://localhost:5173"] for local dev
 ```
+
+The `llm_proxy_passthrough.py` route (`/llm/proxy/openai/v1/*`) does not use config fields — it constructs the target URL as `{foundry_url}/api/v2/llm/proxy/openai/v1/{path}` directly.
 
 All settings can be overridden via environment variables or a `backend/.env` file.
 
@@ -268,9 +241,10 @@ POST /api/v1/datasets/{rid}/transactions/{txn}/commit
 New files are picked up by Foundry's incremental build. Trigger a manual build on the dataset if objects don't appear in Ontology Viewer after writes.
 
 ### Foundry LLM Proxy
-- OpenAI-compat: `POST /api/v2/llm/proxy/openai/v1/chat/completions` — model name is short name (e.g. `claude-3-5-sonnet`), not full RID.
+- OpenAI-compat: `POST /api/v2/llm/proxy/openai/v1/chat/completions` — model name is the short alias registered in Foundry Developer Console > Language Models.
 - Streaming: set `"stream": true`; response is `text/event-stream`.
-- openai-compat: assumed at `/api/v2/llm/proxy/openai/v1` — set `LLM_PROXY_openai_TRANSLATE=true` as fallback if it doesn't exist.
+- **Available models (this workspace):** only `gpt-4o` is registered. All Claude/Anthropic aliases (`claude-3-5-sonnet`, `claude-3-5-sonnet-20241022`, etc.) return `LanguageModelService:ProxyModelNotFound`. To check: `GET /api/v2/llm/proxy/openai/v1/models` returns 404 on this instance; probe individual aliases with a test request.
+- Foundry rejects unknown fields — strip `store`, `metadata`, `service_tier`, `parallel_tool_calls` before forwarding.
 
 ### OpenClaw Control UI — Two Separate Tokens
 `OPENCLAW_GATEWAY_TOKEN` (env var) and the Control UI's "Gateway Token" field are **not the same thing**:

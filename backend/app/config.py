@@ -14,32 +14,23 @@ class Settings(BaseSettings):
     # POST {foundry_url}/api/v2/llm/proxy/openai/v1/chat/completions
     llm_proxy_path: str = "/api/v2/llm/proxy/openai/v1/chat/completions"
 
-    # Full RID for the model — verify in Foundry: Developer Console > Language Models
-    # Example: ri.language-model-service..language-model.claude-3-5-sonnet
-    default_model: str = "claude-3-5-sonnet"
+    # Only gpt-4o is registered on this Foundry workspace's Language Model Service.
+    # Claude/Anthropic models return ProxyModelNotFound on this instance.
+    default_model: str = "gpt-4o"
 
     # Injected by Foundry CM runtime in production; set manually in .env for local dev
     module_auth_token: str = ""
 
-    # Flip to true in Phase 4 to route through the OpenClaw subprocess
+    # Flip to true to route /chat through the OpenClaw WS gateway subprocess
     use_openclaw_gateway: bool = False
 
     # ── OpenClaw gateway ──────────────────────────────────────────────────────
     openclaw_gateway_token: str = ""        # set via Foundry secret OPENCLAW_GATEWAY_TOKEN
     openclaw_port: int = 18789
 
-    # Foundry openai-compatible LLM proxy (mirrors the openai path pattern)
-    # Set llm_proxy_openai_translate=true if Foundry only has the OpenAI endpoint
-    llm_proxy_openai_path: str = "/api/v2/llm/proxy/openai/v1"
-    llm_proxy_openai_translate: bool = False
-
     @property
     def llm_proxy_url(self) -> str:
         return f"{self.foundry_url}{self.llm_proxy_path}"
-
-    @property
-    def llm_proxy_openai_url(self) -> str:
-        return f"{self.foundry_url}{self.llm_proxy_openai_path}"
 
 
 @lru_cache
