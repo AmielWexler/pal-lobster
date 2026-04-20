@@ -36,19 +36,12 @@ A single script starts everything: builds OpenClaw on first run, creates a Pytho
 ```bash
 cp backend/.env.example backend/.env
 # Edit backend/.env — set MODULE_AUTH_TOKEN to your Foundry token
-./scripts/dev.sh
+./scripts/run-local-no-docker.sh
 ```
 
 First run builds OpenClaw (~2 min). Subsequent runs are instant (build is skipped if `dist/control-ui/` exists).
 
-Once running:
-1. Open **http://localhost:18789** — the OpenClaw Control UI loads
-2. Get the dashboard token:
-   ```bash
-   cd backend/openclaw-src && node openclaw.mjs dashboard
-   ```
-   This prints a URL like `http://localhost:18789/?token=<token>` — open it directly, or paste the token into the Gateway Token field.
-3. Start chatting.
+The script waits for both processes to be healthy, then automatically runs `node openclaw.mjs dashboard` — this prints the tokenized URL and opens it in your browser. The Control UI connects immediately.
 
 Press **Ctrl+C** to stop both processes.
 
@@ -113,10 +106,17 @@ cd backend/openclaw-src
 ANTHROPIC_BASE_URL=http://localhost:8080/llm/proxy/anthropic/v1 \
 ANTHROPIC_API_KEY=foundry-proxied \
 OPENCLAW_GATEWAY_TOKEN=local-dev-secret \
-OPENCLAW_STATE_DIR=/tmp/openclaw-state \
 OPENCLAW_SKIP_CHANNELS=1 \
 node openclaw.mjs gateway --port 18789 --allow-unconfigured
 ```
+
+Then get the dashboard URL (in a second terminal, from the same directory):
+```bash
+node openclaw.mjs dashboard
+# → opens browser at http://127.0.0.1:18789/#token=<token>
+```
+
+> **Important:** Do not set `OPENCLAW_STATE_DIR` when running the gateway manually. The `openclaw dashboard` command reads from the same default state (`~/.openclaw/`). A custom state dir causes a token mismatch.
 
 ---
 
@@ -135,9 +135,11 @@ These are **different things**. The env var is for the Python backend's WebSocke
 ```bash
 cd backend/openclaw-src
 node openclaw.mjs dashboard
-# Prints: http://localhost:18789/?token=<token>
+# Prints: http://127.0.0.1:18789/#token=<token>  and opens in your browser
 ```
-Open that URL directly, or copy the token value into the Control UI's Gateway Token field.
+Open that URL directly (the token is in the `#` fragment), or copy just the token value into the Control UI's Gateway Token field.
+
+> **Do not set `OPENCLAW_STATE_DIR`** when running this command — it must use the default state dir (`~/.openclaw/`) which is the same one the gateway uses. A custom state dir generates a token the gateway doesn't recognise.
 
 ---
 
@@ -182,7 +184,10 @@ All settings in `backend/.env`:
 ## Common issues
 
 ### "unauthorized: gateway token mismatch" in Control UI
-You entered the wrong token in the Gateway Token field. The Control UI's token is **not** `OPENCLAW_GATEWAY_TOKEN`. Run `node openclaw.mjs dashboard` in the `backend/openclaw-src/` directory to get the correct token.
+The Control UI's "Gateway Token" field is **not** `OPENCLAW_GATEWAY_TOKEN`. Run `node openclaw.mjs dashboard` from `backend/openclaw-src/` (without setting `OPENCLAW_STATE_DIR`) to get the correct tokenized URL.
+
+### "unauthorized: too many failed authentication attempts"
+A previous wrong token triggered a lockout. Simply stop and restart the gateway — the counter resets on process restart. Re-run `./scripts/run-local-no-docker.sh`.
 
 ### `401 Unauthorized` from `/chat`
 The Bearer token is missing or expired. Pass a valid Foundry token in the `Authorization: Bearer` header.

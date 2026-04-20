@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Local dev launcher — starts FastAPI + OpenClaw gateway without Docker.
-# Usage: ./scripts/dev.sh
+# Usage: ./scripts/run-local-no-docker.sh
 #
 # Prerequisites:
 #   - Python 3.11+, Node 22+, pnpm
