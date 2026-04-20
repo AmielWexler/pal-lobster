@@ -1,31 +1,34 @@
 import { APPLICATION_RID, FOUNDRY_URL } from "../foundry";
 import type { ChatChunk, Message } from "./types";
 
-// Foundry CM function invocation endpoint.
-// The CM `chat` function is exposed under the third-party application's API path.
-// Adjust this if Foundry routes CM functions differently in your deployment.
+// Foundry CM function invocation endpoint (used in production / Foundry-deployed builds).
 const CM_CHAT_URL = `${FOUNDRY_URL}/api/v2/thirdPartyApplications/${APPLICATION_RID}/computeModules/functions/chat`;
+
+// Local dev override: set VITE_DIRECT_BACKEND_URL=http://localhost:8080 in frontend/.env.local
+// to bypass Foundry CM and call FastAPI directly. When unset, the CM endpoint is used.
+const DIRECT_BACKEND = (import.meta.env.VITE_DIRECT_BACKEND_URL as string | undefined)?.replace(/\/$/, "");
+const CHAT_URL = DIRECT_BACKEND ? `${DIRECT_BACKEND}/chat` : CM_CHAT_URL;
+
+// When calling FastAPI directly the body is a flat ChatRequest (no "event" wrapper).
+// When going through Foundry CM the body is wrapped in {"event": {...}}.
+function buildBody(messages: Message[], conversationId: string | undefined, maxTokens: number) {
+  const payload = { messages, conversation_id: conversationId ?? null, model: null, max_tokens: maxTokens };
+  return DIRECT_BACKEND ? payload : { event: payload };
+}
 
 export async function* streamChat(
   token: string,
   messages: Message[],
   conversationId?: string,
 ): AsyncGenerator<ChatChunk> {
-  const response = await fetch(CM_CHAT_URL, {
+  const response = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
       Accept: "text/event-stream",
     },
-    body: JSON.stringify({
-      event: {
-        messages,
-        conversation_id: conversationId ?? null,
-        model: null,
-        max_tokens: 4096,
-      },
-    }),
+    body: JSON.stringify(buildBody(messages, conversationId, 4096)),
   });
 
   if (!response.ok) {

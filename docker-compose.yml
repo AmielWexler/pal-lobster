@@ -1,0 +1,41 @@
+version: "3.9"
+
+# ── Local development compose ─────────────────────────────────────────────────
+#
+# Runs the backend (FastAPI only — no supervisord, no OpenClaw, no CM handler).
+# The frontend dev server is run separately: cd frontend && npm run dev
+#
+# Prerequisites:
+#   1. git submodule update --init --recursive   (openclaw-src must be present)
+#   2. cp backend/.env.example backend/.env      (fill in your FOUNDRY_TOKEN)
+#
+# Usage:
+#   docker compose up --build          # first run (builds the image)
+#   docker compose up                  # subsequent runs (uses cached image)
+#   docker compose logs -f backend     # tail logs
+#   docker compose down                # stop and remove containers
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Override supervisord CMD — run FastAPI only for local dev.
+    # OpenClaw and the CM handler are not needed for local testing.
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env
+    environment:
+      # Local dev overrides — always false in compose (no Foundry CM runtime)
+      - USE_OPENCLAW_GATEWAY=false
+      # Allow the Vite dev server to call this API directly (CORS)
+      - CORS_ORIGINS=http://localhost:5173
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

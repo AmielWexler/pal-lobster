@@ -7,6 +7,10 @@ class Settings(BaseSettings):
 
     foundry_url: str = "https://accenture.palantirfoundry.com"
 
+    # CORS — comma-separated allowed origins (e.g. "http://localhost:5173").
+    # Empty = CORS middleware disabled (correct for production in Foundry CM).
+    cors_origins: list[str] = []
+
     # POST {foundry_url}/api/v2/llm/proxy/openai/v1/chat/completions
     llm_proxy_path: str = "/api/v2/llm/proxy/openai/v1/chat/completions"
 

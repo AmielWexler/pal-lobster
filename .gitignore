@@ -4,7 +4,11 @@ data-tmp/
 .palantir/mcp-config.json
 .palantir/dv-console.json
 .palantir/dev-console.json
+
+# Secret env files (never commit tokens)
 .env
+backend/.env
+frontend/.env.local
 
 # Frontend build artifacts
 frontend/node_modules/
