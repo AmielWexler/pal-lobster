@@ -11,11 +11,19 @@ type AuthState =
   | { status: "unauthenticated" }
   | { status: "error"; message: string };
 
+const DEV_TOKEN = import.meta.env.VITE_DEV_TOKEN as string | undefined;
+
 export function useFoundryAuth() {
   const [state, setState] = useState<AuthState>({ status: "loading" });
 
   useEffect(() => {
     const init = async () => {
+      // Local dev bypass: set VITE_DEV_TOKEN in frontend/.env.local to skip OAuth.
+      if (DEV_TOKEN) {
+        setState({ status: "authenticated", token: DEV_TOKEN });
+        return;
+      }
+
       // If we already have a cached token, use it immediately.
       const cached = auth.getTokenOrUndefined();
       if (cached) {
