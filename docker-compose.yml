@@ -21,16 +21,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # Override supervisord CMD — run FastAPI only for local dev.
-    # OpenClaw and the CM handler are not needed for local testing.
-    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level info
     ports:
       - "8080:8080"
+      - "18789:18789"
     env_file:
       - ./backend/.env
     environment:
-      # Local dev overrides — always false in compose (no Foundry CM runtime)
-      - USE_OPENCLAW_GATEWAY=false
       # Allow the Vite dev server to call this API directly (CORS)
       - CORS_ORIGINS=http://localhost:5173
     healthcheck:

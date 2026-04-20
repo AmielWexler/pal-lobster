@@ -9,7 +9,7 @@ COPY openclaw-src/package.json openclaw-src/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY openclaw-src/ .
-RUN pnpm build && pnpm prune --prod
+RUN pnpm build && pnpm ui:build && pnpm prune --prod
 
 # ── Stage 2: Python + Node runtime ───────────────────────────────────────────
 FROM --platform=linux/amd64 python:3.11-slim
@@ -37,6 +37,6 @@ COPY --from=openclaw-build /openclaw/node_modules  /app/openclaw/node_modules
 RUN useradd -u 5000 -m appuser && chown -R 5000:5000 /app
 USER 5000
 
-EXPOSE 8080
+EXPOSE 8080 18789
 
 CMD ["/usr/bin/supervisord", "-n", "-c", "/app/supervisord.conf"]
