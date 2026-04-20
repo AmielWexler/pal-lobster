@@ -19,7 +19,8 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-_STRIP_KEYS: frozenset[str] = frozenset()  # nothing to strip for OpenAI format
+# Top-level OpenAI request fields Foundry's proxy doesn't accept
+_STRIP_KEYS = {"store", "metadata", "service_tier", "parallel_tool_calls"}
 
 _client = httpx.AsyncClient(
     timeout=httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=5.0),
@@ -36,7 +37,12 @@ async def openai_passthrough(path: str, request: Request) -> StreamingResponse:
         logger.warning("MODULE_AUTH_TOKEN not set — LLM proxy calls will fail auth")
 
     target_url = f"{settings.foundry_url}/api/v2/llm/proxy/openai/v1/{path}"
-    body = await request.body()
+    raw = await request.body()
+    try:
+        body = json.dumps({k: v for k, v in json.loads(raw).items()
+                           if k not in _STRIP_KEYS}).encode()
+    except Exception:
+        body = raw
 
     forward_headers = {
         "Authorization": f"Bearer {token}",
