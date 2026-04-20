@@ -1,0 +1,8 @@
+fastapi[standard]>=0.115.0
+uvicorn[standard]>=0.30.0
+httpx[http2]>=0.27.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+websockets>=12.0
+cryptography>=42.0
+# compute-modules>=1.0.0  # Foundry SDK — install separately from Palantir's channel if needed
