@@ -5,3 +5,13 @@ data-tmp/
 .palantir/dv-console.json
 .palantir/dev-console.json
 .env
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Python
+__pycache__/
+*.pyc
+backend/.venv/

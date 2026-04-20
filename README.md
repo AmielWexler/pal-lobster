@@ -148,6 +148,21 @@ python compute_module/handler.py
 
 The handler waits for FastAPI health (15 × 2s retries) before connecting to Foundry.
 
+### 4. Frontend (React dev server)
+
+```bash
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173
+```
+
+On first load you'll see a "Sign in with Foundry" button. After clicking, Foundry OAuth redirects back to `http://localhost:5173/?code=...` and the app processes the token automatically.
+
+**Note:** If the CM function invocation returns 404, the endpoint in `src/api/chat.ts` (`CM_CHAT_URL`) may need adjustment for your Foundry instance's routing. Check the Developer Console for the correct CM function invocation URL.
+
+For local end-to-end testing (frontend → backend without full Foundry deployment), you can temporarily point `CM_CHAT_URL` at `http://localhost:8080/chat` and pass any token — this bypasses the CM layer and hits FastAPI directly.
+
 ---
 
 ## Docker Build
@@ -205,7 +220,7 @@ In production, `MODULE_AUTH_TOKEN` is injected automatically by the Foundry CM r
 |---|---|---|
 | 1 | Backend skeleton: FastAPI, LLM proxy, CM handler | ✅ Complete |
 | 2 | Ontology integration: dataset writes for chat history | ✅ Complete |
-| 3 | Frontend React/OSDK app | 🔲 Not started |
+| 3 | Frontend React/OSDK app | ✅ Complete |
 | 4 | OpenClaw gateway integration | ✅ Complete |
 | 5 | Slack Socket Mode | 🔲 Not started |
 | 6 | Observability + hardening | 🔲 Not started |

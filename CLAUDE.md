@@ -123,7 +123,7 @@ Link types: `lobster-conversation-messages` (1:many), `lobster-agent-skills` (ma
 |---|---|---|
 | 1 | Backend skeleton: FastAPI, LLM proxy, CM handler | ✅ Complete |
 | 2 | Ontology integration: dataset writes for chat history | ✅ Complete |
-| 3 | Frontend React/OSDK app | 🔲 Not started |
+| 3 | Frontend React/OSDK app | ✅ Complete |
 | 4 | OpenClaw gateway integration | ✅ Complete |
 | 5 | Slack Socket Mode | 🔲 Not started |
 | 6 | Observability + hardening (SLS logging, circuit breakers, token validation middleware) | 🔲 Not started |
@@ -141,12 +141,22 @@ Link types: `lobster-conversation-messages` (1:many), `lobster-agent-skills` (ma
 - `app/routers/chat.py` wired to persist conversation + both message turns per request
 - **Validation**: After merge proposal approval + dataset build, confirm rows in Ontology Viewer
 
-### Phase 3 — Frontend React App 🔲
-- Bootstrap with `npm create @osdk/app@latest` in `frontend/`
-- SSE via `fetch` + `ReadableStream` (POST-based, not EventSource — EventSource doesn't support POST)
-- OSDK Client ID: `f70ee0f0dcdc17bef7d64a27efef6188`, redirect URI: `http://localhost:5173`
-- Host on Foundry Developer Console; embed in Workshop via URL widget
-- **Validation**: Stream response in browser; see objects in Ontology after chat
+### Phase 3 — Frontend React App ✅
+- React 18 + Vite + TypeScript + Tailwind CSS
+- `@osdk/oauth` for PKCE auth — `createPublicOauthClient(clientId, foundryUrl, redirectUri)`
+  - `auth()` → `Promise<string>` (access token; processes callback automatically)
+  - `auth.getTokenOrUndefined()` → current token without triggering sign-in
+  - `auth.signIn()` → triggers OAuth redirect
+  - `auth.refresh()` → refreshes token, returns `Token | undefined`
+- `src/api/chat.ts` — calls CM `chat` function via:
+  `POST {foundry_url}/api/v2/thirdPartyApplications/{applicationRid}/computeModules/functions/chat`
+  with `{"event": {messages, conversation_id, model, max_tokens}}`
+- Streaming via `fetch` + `ReadableStream` — handles both raw JSON chunks and SSE `data: {...}` lines
+- `useChat` hook — manages message list, streams deltas into assistant message, tracks `conversation_id`
+- `useFoundryAuth` hook — handles loading/callback/unauthenticated/authenticated states
+- **Validation**: `cd frontend && npm run dev` → http://localhost:5173 → sign in → chat
+- **Deploy**: `npm run build` → upload `dist/` to Foundry Developer Console under the OSDK app
+- **Note**: CM function invocation endpoint may need verification — adjust `CM_CHAT_URL` in `src/api/chat.ts` if 404
 
 ### Phase 4 — OpenClaw Gateway Integration ✅
 - `app/routers/llm_proxy_passthrough.py` — intercepts OpenClaw's Anthropic API calls, injects `MODULE_AUTH_TOKEN`
