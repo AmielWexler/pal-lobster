@@ -58,7 +58,14 @@ pal-lobster/
 │           └── openclaw_gateway.py        # WebSocket client, ECDSA auth handshake
 ├── frontend/
 │   ├── foundry.config.json                # OSDK app registration + OAuth config
-│   └── src/                               # React 18 + Vite + Tailwind (Phase 3)
+│   ├── .env.local.example                 # copy → .env.local for local dev bypass
+│   └── src/
+│       ├── foundry.ts                     # auth client, app RID, Foundry URL
+│       ├── api/chat.ts                    # streamChat() — CM or direct backend
+│       ├── hooks/                         # useFoundryAuth, useChat
+│       └── components/                    # ChatWindow, MessageList, MessageInput, Layout
+├── docker-compose.yml                     # local dev: FastAPI only (no supervisord)
+├── LOCAL_DEV.md                           # full local dev guide
 ├── ontology/
 │   ├── object-types/                      # JSON schema definitions
 │   └── link-types/
@@ -74,114 +81,67 @@ pal-lobster/
 
 ## Prerequisites
 
-- Python 3.11+
-- Node.js 22+ and pnpm 10 (for OpenClaw build)
-- Docker (for container build / deployment)
-- Access to `accenture.palantirfoundry.com` with a valid token
+- **Foundry personal access token** — [Developer Settings → Personal Access Tokens](https://accenture.palantirfoundry.com/workspace/settings/developer-settings/personal-access-tokens)
+- Python 3.11+ (bare-Python local dev path)
+- Node.js 22+ and npm (frontend dev server)
+- pnpm 10 (only needed to build OpenClaw from source — required for the Docker build)
+- Docker Desktop (for the `docker-compose` path)
+- The OpenClaw git submodule (`git submodule update --init --recursive`) — required for Docker builds only
 
 ---
 
-## Local Development (without Docker)
+## Local Development
 
-### 1. Backend only (no OpenClaw, direct LLM proxy mode)
+> **Full guide:** see [`LOCAL_DEV.md`](LOCAL_DEV.md) — includes two paths (bare Python and Docker), all env vars, curl smoke tests, and a troubleshooting section.
+
+### Quick start (bare Python — no Docker)
 
 ```bash
+# Terminal 1 — backend
 cd backend
-pip install -e .
-
-# Create .env (copy from .env.example or set manually)
-cat > .env <<EOF
-FOUNDRY_URL=https://accenture.palantirfoundry.com
-USE_OPENCLAW_GATEWAY=false
-EOF
-
+python3 -m venv .venv && source .venv/bin/activate
+pip install "fastapi[standard]" "uvicorn[standard]" "httpx[http2]" \
+    pydantic-settings websockets cryptography
+cp .env.example .env
+# → edit backend/.env: set MODULE_AUTH_TOKEN=<your Foundry token>
 uvicorn app.main:app --reload --port 8080
-```
 
-Test the health endpoint:
-```bash
-curl http://localhost:8080/health
-# {"status":"ok"}
-```
-
-Test the chat endpoint (requires a valid Foundry token):
-```bash
-TOKEN=<your-foundry-personal-token>
-curl -N -X POST http://localhost:8080/chat \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"messages":[{"role":"user","content":"hello"}]}'
-# streams: data: {"delta":"Hello","done":false,...}
-# ...
-# data: {"delta":"","done":true,...}
-```
-
-### 2. Run OpenClaw locally alongside FastAPI
-
-```bash
-# Build OpenClaw first
-cd backend/openclaw-src
-pnpm install && pnpm build && pnpm prune --prod
-cd ..
-
-# Terminal 1 — FastAPI
-uvicorn app.main:app --port 8080
-
-# Terminal 2 — OpenClaw
-ANTHROPIC_BASE_URL=http://localhost:8080/llm/proxy/anthropic/v1 \
-ANTHROPIC_API_KEY=foundry-proxied \
-OPENCLAW_GATEWAY_TOKEN=dev-token-123 \
-OPENCLAW_STATE_DIR=/tmp/openclaw-state \
-OPENCLAW_SKIP_CHANNELS=1 \
-  node openclaw-src/openclaw.mjs gateway --port 18789 --allow-unconfigured
-```
-
-Then set `USE_OPENCLAW_GATEWAY=true` in `.env` and restart FastAPI.
-
-### 3. Run the CM handler locally
-
-```bash
-# In a third terminal, with FastAPI already running
-cd backend
-python compute_module/handler.py
-```
-
-The handler waits for FastAPI health (15 × 2s retries) before connecting to Foundry.
-
-### 4. Frontend (React dev server)
-
-```bash
-cd frontend
-npm install
-npm run dev
+# Terminal 2 — frontend
+cp frontend/.env.local.example frontend/.env.local
+cd frontend && npm install && npm run dev
 # → http://localhost:5173
 ```
 
-On first load you'll see a "Sign in with Foundry" button. After clicking, Foundry OAuth redirects back to `http://localhost:5173/?code=...` and the app processes the token automatically.
+The frontend `VITE_DIRECT_BACKEND_URL=http://localhost:8080` setting in `.env.local` bypasses Foundry CM and hits FastAPI directly — no Foundry deployment needed to test chat.
 
-**Note:** If the CM function invocation returns 404, the endpoint in `src/api/chat.ts` (`CM_CHAT_URL`) may need adjustment for your Foundry instance's routing. Check the Developer Console for the correct CM function invocation URL.
+### With Docker Compose
 
-For local end-to-end testing (frontend → backend without full Foundry deployment), you can temporarily point `CM_CHAT_URL` at `http://localhost:8080/chat` and pass any token — this bypasses the CM layer and hits FastAPI directly.
+```bash
+git submodule update --init --recursive   # openclaw-src required for image build
+cp backend/.env.example backend/.env
+# → edit backend/.env: set MODULE_AUTH_TOKEN=<your Foundry token>
+
+docker compose up --build    # or: docker-compose up --build
+```
+
+Backend available at http://localhost:8080. Run the frontend separately with `npm run dev`.
 
 ---
 
-## Docker Build
+## Docker Image (standalone)
 
 ```bash
-# From repo root — must have openclaw-src submodule checked out
-git submodule update --init --recursive
-
+# Build from backend/ context
 cd backend
 docker build -t lobster-backend .
-```
 
-Run locally:
-```bash
+# Run with just FastAPI (no supervisord)
 docker run --rm -p 8080:8080 \
-  -e FOUNDRY_URL=https://accenture.palantirfoundry.com \
   -e USE_OPENCLAW_GATEWAY=false \
+  -e CORS_ORIGINS=http://localhost:5173 \
   -e MODULE_AUTH_TOKEN=<token> \
-  lobster-backend
+  lobster-backend \
+  python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
 ```
 
 ---
@@ -199,6 +159,7 @@ docker run --rm -p 8080:8080 \
 | `LLM_PROXY_ANTHROPIC_PATH` | `/api/v2/llm/proxy/anthropic/v1` | Foundry Anthropic-compat endpoint |
 | `LLM_PROXY_ANTHROPIC_TRANSLATE` | `false` | Translate Anthropic→OpenAI if Foundry lacks native Anthropic endpoint |
 | `MODULE_AUTH_TOKEN` | *(injected by Foundry CM runtime)* | Server-side token for LLM proxy passthrough — do NOT set manually in prod |
+| `CORS_ORIGINS` | `""` (disabled) | Comma-separated allowed origins — set `http://localhost:5173` for local dev; leave empty in prod |
 
 In production, `MODULE_AUTH_TOKEN` is injected automatically by the Foundry CM runtime into every process in the container. Never set it as a static secret.
 

@@ -44,7 +44,7 @@ Two separate auth paths — never mix them:
 ```
 
 ### Feature Flag
-`USE_OPENCLAW_GATEWAY` in `config.py` — defaults to `false` (direct LLM calls). Flip to `true` in Phase 4 to route through the full OpenClaw subprocess.
+`USE_OPENCLAW_GATEWAY` in `config.py` — defaults to `false` (direct LLM calls). Set to `true` to route through the OpenClaw subprocess (all Phase 4 code is in place).
 
 ---
 
@@ -87,7 +87,27 @@ pal-lobster/
 │           └── openclaw_gateway.py        # WebSocket client with ECDSA P-256 auth handshake
 ├── frontend/
 │   ├── foundry.config.json                # OSDK app registration + OAuth config
-│   └── src/                               # React app (Phase 3 — not yet built)
+│   ├── .env.local.example                 # local dev overrides template (copy → .env.local)
+│   ├── vite.config.ts / tsconfig.json / tailwind.config.js / postcss.config.js
+│   └── src/
+│       ├── main.tsx / App.tsx             # entry + auth-gated root
+│       ├── foundry.ts                     # FOUNDRY_URL, APPLICATION_RID, CLIENT_ID, auth client
+│       ├── index.css                      # Tailwind base
+│       ├── api/
+│       │   ├── chat.ts                    # streamChat() — CM or direct backend (VITE_DIRECT_BACKEND_URL)
+│       │   └── types.ts                   # Message, ChatChunk
+│       ├── hooks/
+│       │   ├── useFoundryAuth.ts          # OAuth state machine (loading/unauth/auth/error)
+│       │   └── useChat.ts                 # message list + streaming delta accumulation
+│       └── components/
+│           ├── chat/
+│           │   ├── ChatWindow.tsx         # full chat UI wrapper
+│           │   ├── MessageList.tsx        # message bubbles + typing indicator
+│           │   └── MessageInput.tsx       # auto-resize textarea, Shift+Enter newline
+│           └── layout/
+│               └── Layout.tsx             # dark header shell
+├── docker-compose.yml                     # local dev: backend only (uvicorn, no supervisord)
+├── LOCAL_DEV.md                           # step-by-step local dev guide
 ├── ontology/
 │   ├── object-types/                      # JSON schema definitions
 │   └── link-types/                        # See ontology/README.md for RIDs + status
@@ -154,9 +174,10 @@ Link types: `lobster-conversation-messages` (1:many), `lobster-agent-skills` (ma
 - Streaming via `fetch` + `ReadableStream` — handles both raw JSON chunks and SSE `data: {...}` lines
 - `useChat` hook — manages message list, streams deltas into assistant message, tracks `conversation_id`
 - `useFoundryAuth` hook — handles loading/callback/unauthenticated/authenticated states
+- **Local dev bypass**: set `VITE_DIRECT_BACKEND_URL=http://localhost:8080` in `frontend/.env.local` — `streamChat()` will POST to FastAPI directly instead of going through the Foundry CM endpoint (no CM deployment needed for local testing)
 - **Validation**: `cd frontend && npm run dev` → http://localhost:5173 → sign in → chat
 - **Deploy**: `npm run build` → upload `dist/` to Foundry Developer Console under the OSDK app
-- **Note**: CM function invocation endpoint may need verification — adjust `CM_CHAT_URL` in `src/api/chat.ts` if 404
+- **Note**: CM function invocation endpoint may need verification in production — adjust `CM_CHAT_URL` in `src/api/chat.ts` if 404
 
 ### Phase 4 — OpenClaw Gateway Integration ✅
 - `app/routers/llm_proxy_passthrough.py` — intercepts OpenClaw's Anthropic API calls, injects `MODULE_AUTH_TOKEN`
@@ -183,11 +204,12 @@ Link types: `lobster-conversation-messages` (1:many), `lobster-agent-skills` (ma
 foundry_url: str = "https://accenture.palantirfoundry.com"
 llm_proxy_path: str = "/api/v2/llm/proxy/openai/v1/chat/completions"
 default_model: str = "claude-3-5-sonnet"
-use_openclaw_gateway: bool = False          # flip True for Phase 4
+use_openclaw_gateway: bool = False          # True → route chat through OpenClaw WS gateway
 openclaw_gateway_token: str = ""            # Foundry secret OPENCLAW_GATEWAY_TOKEN
 openclaw_port: int = 18789
 llm_proxy_anthropic_path: str = "/api/v2/llm/proxy/anthropic/v1"
 llm_proxy_anthropic_translate: bool = False # fallback if Foundry lacks Anthropic endpoint
+cors_origins: list[str] = []               # e.g. ["http://localhost:5173"] for local dev
 ```
 
 All settings can be overridden via environment variables or a `backend/.env` file.
