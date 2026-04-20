@@ -4,3 +4,4 @@ data-tmp/
 .palantir/mcp-config.json
 .palantir/dv-console.json
 .palantir/dev-console.json
+.env
