@@ -19,9 +19,9 @@ Container (linux/amd64, USER 5000)
 UI: OpenClaw's built-in Control UI served at :18789 (Lit web components — no separate frontend needed)
 
 LLM flow (OpenClaw → Foundry proxy):
-  OpenClaw  →  POST localhost:8080/llm/proxy/anthropic/v1/messages
+  OpenClaw  →  POST localhost:8080/llm/proxy/openai/v1/messages
             →  FastAPI injects MODULE_AUTH_TOKEN
-            →  Foundry /api/v2/llm/proxy/anthropic/v1/messages
+            →  Foundry /api/v2/llm/proxy/openai/v1/messages
 
 Chat flow (user → CM function):
   CM function "chat"  →  handler.py (extracts context.auth_token)
@@ -52,7 +52,7 @@ pal-lobster/
 │       ├── routers/
 │       │   ├── chat.py                    # POST /chat → SSE stream
 │       │   ├── health.py                  # GET /health
-│       │   └── llm_proxy_passthrough.py   # POST /llm/proxy/anthropic/v1/{path}
+│       │   └── llm_proxy_passthrough.py   # POST /llm/proxy/openai/v1/{path}
 │       └── services/
 │           ├── llm_proxy.py               # Foundry OpenAI-compat proxy, streaming
 │           ├── ontology.py                # Dataset transaction writes for chat history
@@ -155,8 +155,8 @@ docker run --rm -p 8080:8080 \
 | `OPENCLAW_PORT` | `18789` | OpenClaw gateway listen port |
 | `DEFAULT_MODEL` | `claude-3-5-sonnet` | Model RID or name for the Foundry LLM proxy |
 | `LLM_PROXY_PATH` | `/api/v2/llm/proxy/openai/v1/chat/completions` | Foundry OpenAI-compat endpoint |
-| `LLM_PROXY_ANTHROPIC_PATH` | `/api/v2/llm/proxy/anthropic/v1` | Foundry Anthropic-compat endpoint |
-| `LLM_PROXY_ANTHROPIC_TRANSLATE` | `false` | Translate Anthropic→OpenAI if Foundry lacks native Anthropic endpoint |
+| `LLM_PROXY_openai_PATH` | `/api/v2/llm/proxy/openai/v1` | Foundry openai-compat endpoint |
+| `LLM_PROXY_openai_TRANSLATE` | `false` | Translate openai→OpenAI if Foundry lacks native openai endpoint |
 | `MODULE_AUTH_TOKEN` | *(injected by Foundry CM runtime)* | Server-side token for LLM proxy passthrough — do NOT set manually in prod |
 | `CORS_ORIGINS` | `""` (disabled) | Comma-separated allowed origins — set `http://localhost:5173` for local dev; leave empty in prod |
 

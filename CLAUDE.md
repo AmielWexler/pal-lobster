@@ -26,7 +26,7 @@ Two separate auth paths — never mix them:
 | Caller | Token source | Used for |
 |---|---|---|
 | User chat (via CM function) | `context.auth_token.token` — per-user OAuth from CM invocation | `Authorization: Bearer` on `/chat`, ontology writes |
-| OpenClaw autonomous LLM calls | `MODULE_AUTH_TOKEN` — injected by Foundry CM runtime into all processes | FastAPI `/llm/proxy/anthropic/v1/*` → Foundry LLM proxy |
+| OpenClaw autonomous LLM calls | `MODULE_AUTH_TOKEN` — injected by Foundry CM runtime into all processes | FastAPI `/llm/proxy/openai/v1/*` → Foundry LLM proxy |
 
 `MODULE_AUTH_TOKEN` is automatically present in all container processes at runtime. **Never set it as a static secret; never expose it outside the container.**
 
@@ -38,9 +38,9 @@ Two separate auth paths — never mix them:
 
 [USE_OPENCLAW_GATEWAY=true]
   CM handler → FastAPI /chat → openclaw_gateway.py (WS to :18789)
-             → OpenClaw → POST localhost:8080/llm/proxy/anthropic/v1/messages
+             → OpenClaw → POST localhost:8080/llm/proxy/openai/v1/messages
              → llm_proxy_passthrough.py (injects MODULE_AUTH_TOKEN)
-             → POST {foundry_url}/api/v2/llm/proxy/anthropic/v1/messages
+             → POST {foundry_url}/api/v2/llm/proxy/openai/v1/messages
 ```
 
 ### Feature Flag
@@ -81,7 +81,7 @@ pal-lobster/
 │       ├── routers/
 │       │   ├── chat.py                    # POST /chat → SSE stream (branches on USE_OPENCLAW_GATEWAY)
 │       │   ├── health.py                  # GET /health → {"status":"ok"}
-│       │   └── llm_proxy_passthrough.py   # POST /llm/proxy/anthropic/v1/{path} (for OpenClaw's LLM calls)
+│       │   └── llm_proxy_passthrough.py   # POST /llm/proxy/openai/v1/{path} (for OpenClaw's LLM calls)
 │       └── services/
 │           ├── llm_proxy.py               # Foundry OpenAI-compat proxy, streaming, 429/503 handling
 │           ├── ontology.py                # Dataset transaction writes for chat history
@@ -186,11 +186,11 @@ Link types: `lobster-conversation-messages` (1:many), `lobster-agent-skills` (ma
 - **Note**: CM function invocation endpoint may need verification in production — adjust `CM_CHAT_URL` in `src/api/chat.ts` if 404
 
 ### Phase 4 — OpenClaw Gateway Integration ✅
-- `app/routers/llm_proxy_passthrough.py` — intercepts OpenClaw's Anthropic API calls, injects `MODULE_AUTH_TOKEN`
+- `app/routers/llm_proxy_passthrough.py` — intercepts OpenClaw's openai API calls, injects `MODULE_AUTH_TOKEN`
 - `app/services/openclaw_gateway.py` — WS client with full ECDSA challenge handshake
-- `supervisord.conf` — OpenClaw process with `ANTHROPIC_BASE_URL=http://localhost:8080/llm/proxy/anthropic/v1`
+- `supervisord.conf` — OpenClaw process with `OPENAI_BASE_URL=http://localhost:8080/llm/proxy/openai/v1`
 - `USE_OPENCLAW_GATEWAY=true` in config activates the path
-- **Fallback**: If Foundry lacks native Anthropic endpoint, set `LLM_PROXY_ANTHROPIC_TRANSLATE=true`
+- **Fallback**: If Foundry lacks native openai endpoint, set `LLM_PROXY_openai_TRANSLATE=true`
 
 ### Phase 5 — Slack 🔲
 - `slack/manifest.json`, Socket Mode client in `app/services/slack.py`
@@ -213,8 +213,8 @@ default_model: str = "claude-3-5-sonnet"
 use_openclaw_gateway: bool = False          # True → route chat through OpenClaw WS gateway
 openclaw_gateway_token: str = ""            # Foundry secret OPENCLAW_GATEWAY_TOKEN
 openclaw_port: int = 18789
-llm_proxy_anthropic_path: str = "/api/v2/llm/proxy/anthropic/v1"
-llm_proxy_anthropic_translate: bool = False # fallback if Foundry lacks Anthropic endpoint
+llm_proxy_openai_path: str = "/api/v2/llm/proxy/openai/v1"
+llm_proxy_openai_translate: bool = False # fallback if Foundry lacks openai endpoint
 cors_origins: list[str] = []               # e.g. ["http://localhost:5173"] for local dev
 ```
 
@@ -270,7 +270,7 @@ New files are picked up by Foundry's incremental build. Trigger a manual build o
 ### Foundry LLM Proxy
 - OpenAI-compat: `POST /api/v2/llm/proxy/openai/v1/chat/completions` — model name is short name (e.g. `claude-3-5-sonnet`), not full RID.
 - Streaming: set `"stream": true`; response is `text/event-stream`.
-- Anthropic-compat: assumed at `/api/v2/llm/proxy/anthropic/v1` — set `LLM_PROXY_ANTHROPIC_TRANSLATE=true` as fallback if it doesn't exist.
+- openai-compat: assumed at `/api/v2/llm/proxy/openai/v1` — set `LLM_PROXY_openai_TRANSLATE=true` as fallback if it doesn't exist.
 
 ### OpenClaw Control UI — Two Separate Tokens
 `OPENCLAW_GATEWAY_TOKEN` (env var) and the Control UI's "Gateway Token" field are **not the same thing**:

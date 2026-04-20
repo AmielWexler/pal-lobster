@@ -51,6 +51,10 @@ fi
 # Override by exporting in your shell before running this script.
 OPENCLAW_GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-local-dev-secret}"
 
+# ── Configure OpenClaw for Foundry LLM proxy ──────────────────────────────────
+green "Configuring OpenClaw agent for Foundry LLM proxy..."
+bash "$REPO_ROOT/backend/openclaw-setup.sh"
+
 # ── Python venv ───────────────────────────────────────────────────────────────
 VENV="$BACKEND_DIR/.venv"
 if [ ! -d "$VENV" ]; then
@@ -93,8 +97,8 @@ done
 # ── Start OpenClaw gateway ────────────────────────────────────────────────────
 green "Starting OpenClaw gateway on :18789 ..."
 cd "$OPENCLAW_SRC"
-ANTHROPIC_BASE_URL="http://localhost:8080/llm/proxy/anthropic/v1" \
-ANTHROPIC_API_KEY="foundry-proxied" \
+OPENAI_BASE_URL="http://localhost:8080/llm/proxy/openai/v1" \
+openai_API_KEY="foundry-proxied" \
 OPENCLAW_GATEWAY_TOKEN="$OPENCLAW_GATEWAY_TOKEN" \
 OPENCLAW_SKIP_CHANNELS="1" \
 node openclaw.mjs gateway --port 18789 --allow-unconfigured &

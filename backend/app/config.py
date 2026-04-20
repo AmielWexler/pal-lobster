@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Example: ri.language-model-service..language-model.claude-3-5-sonnet
     default_model: str = "claude-3-5-sonnet"
 
+    # Injected by Foundry CM runtime in production; set manually in .env for local dev
+    module_auth_token: str = ""
+
     # Flip to true in Phase 4 to route through the OpenClaw subprocess
     use_openclaw_gateway: bool = False
 
@@ -25,18 +28,18 @@ class Settings(BaseSettings):
     openclaw_gateway_token: str = ""        # set via Foundry secret OPENCLAW_GATEWAY_TOKEN
     openclaw_port: int = 18789
 
-    # Foundry Anthropic-compatible LLM proxy (mirrors the openai path pattern)
-    # Set llm_proxy_anthropic_translate=true if Foundry only has the OpenAI endpoint
-    llm_proxy_anthropic_path: str = "/api/v2/llm/proxy/anthropic/v1"
-    llm_proxy_anthropic_translate: bool = False
+    # Foundry openai-compatible LLM proxy (mirrors the openai path pattern)
+    # Set llm_proxy_openai_translate=true if Foundry only has the OpenAI endpoint
+    llm_proxy_openai_path: str = "/api/v2/llm/proxy/openai/v1"
+    llm_proxy_openai_translate: bool = False
 
     @property
     def llm_proxy_url(self) -> str:
         return f"{self.foundry_url}{self.llm_proxy_path}"
 
     @property
-    def llm_proxy_anthropic_url(self) -> str:
-        return f"{self.foundry_url}{self.llm_proxy_anthropic_path}"
+    def llm_proxy_openai_url(self) -> str:
+        return f"{self.foundry_url}{self.llm_proxy_openai_path}"
 
 
 @lru_cache

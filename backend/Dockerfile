@@ -33,6 +33,8 @@ COPY --from=openclaw-build /openclaw/openclaw.mjs  /app/openclaw/openclaw.mjs
 COPY --from=openclaw-build /openclaw/package.json  /app/openclaw/package.json
 COPY --from=openclaw-build /openclaw/node_modules  /app/openclaw/node_modules
 
+RUN chmod +x /app/openclaw-setup.sh
+
 # Non-root numeric user required by Foundry CM runtime
 RUN useradd -u 5000 -m appuser && chown -R 5000:5000 /app
 USER 5000

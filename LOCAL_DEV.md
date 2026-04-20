@@ -103,8 +103,8 @@ uvicorn app.main:app --reload --port 8080
 
 ```bash
 cd backend/openclaw-src
-ANTHROPIC_BASE_URL=http://localhost:8080/llm/proxy/anthropic/v1 \
-ANTHROPIC_API_KEY=foundry-proxied \
+OPENAI_BASE_URL=http://localhost:8080/llm/proxy/openai/v1 \
+openai_API_KEY=foundry-proxied \
 OPENCLAW_GATEWAY_TOKEN=local-dev-secret \
 OPENCLAW_SKIP_CHANNELS=1 \
 node openclaw.mjs gateway --port 18789 --allow-unconfigured
@@ -177,7 +177,7 @@ All settings in `backend/.env`:
 | `OPENCLAW_GATEWAY_TOKEN` | No | `local-dev-secret` | Operator auth token for agent WS connections (not the dashboard token) |
 | `USE_OPENCLAW_GATEWAY` | No | `false` | Routes `/chat` through OpenClaw WS instead of direct Foundry proxy |
 | `CORS_ORIGINS` | No | `http://localhost:5173` | Allow legacy Vite frontend to call FastAPI |
-| `LLM_PROXY_ANTHROPIC_TRANSLATE` | No | `false` | Set `true` if Foundry 404s on `/anthropic/v1` |
+| `LLM_PROXY_openai_TRANSLATE` | No | `false` | Set `true` if Foundry 404s on `/openai/v1` |
 
 ---
 
@@ -193,7 +193,7 @@ A previous wrong token triggered a lockout. Simply stop and restart the gateway 
 The Bearer token is missing or expired. Pass a valid Foundry token in the `Authorization: Bearer` header.
 
 ### LLM proxy returns `404`
-Try setting `LLM_PROXY_ANTHROPIC_TRANSLATE=true` in `backend/.env` — falls back to the OpenAI-compatible Foundry endpoint.
+Try setting `LLM_PROXY_openai_TRANSLATE=true` in `backend/.env` — falls back to the OpenAI-compatible Foundry endpoint.
 
 ### Docker build fails with `missing openclaw-src`
 ```bash
@@ -201,7 +201,7 @@ git submodule update --init --recursive
 ```
 
 ### Control UI loads but messages fail
-Check that FastAPI is running and healthy (`curl http://localhost:8080/health`). OpenClaw routes LLM calls to FastAPI at `localhost:8080/llm/proxy/anthropic/v1`.
+Check that FastAPI is running and healthy (`curl http://localhost:8080/health`). OpenClaw routes LLM calls to FastAPI at `localhost:8080/llm/proxy/openai/v1`.
 
 ### Ontology writes fail silently
 Expected locally — dataset RIDs exist in production only. Chat still works. You'll see:
