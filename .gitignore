@@ -2,3 +2,4 @@
 data-tmp/
 
 .palantir/mcp-config.json
+.palantir/dv-console.json

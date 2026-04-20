@@ -55,27 +55,14 @@
       "cardinality": "ONE_TO_MANY"
     }
   },
-  "pendingManualSteps": {
-    "computeModule": {
-      "action": "Create manually in Foundry Developer Console",
-      "name": "lobster-openclaw-cm",
-      "displayName": "OpenClaw Compute Module",
-      "projectFolder": "ri.compass.main.folder.a22ab25f-e459-4512-97ae-fc10bd2d24ca",
-      "note": "No palantir-mcp tool exists for CM creation; must be done in Foundry UI"
-    },
-    "osdkApp": {
-      "action": "Create manually in Foundry Developer Console",
-      "name": "lobster-openclaw-ui",
-      "displayName": "OpenClaw UI",
-      "projectFolder": "ri.compass.main.folder.a22ab25f-e459-4512-97ae-fc10bd2d24ca",
-      "ontologyObjects": [
-        "vahej4tu.lobster-conversation",
-        "vahej4tu.lobster-message",
-        "vahej4tu.lobster-agent-state",
-        "vahej4tu.lobster-skill",
-        "vahej4tu.lobster-memory-chunk"
-      ],
-      "note": "connect_to_dev_console_app requires an existing app RID; creation must be done in UI"
-    }
+  "computeModule": {
+    "name": "lobster-openclaw-cm",
+    "deployedAppRid": "ri.foundry.main.deployed-app.32456382-2f97-4ad6-95df-8464ab511118"
+  },
+  "osdkApp": {
+    "name": "lobster-openclaw-ui",
+    "applicationRid": "ri.third-party-applications.main.application.2409e8b8-feb9-4107-97ff-ba9244963033",
+    "clientId": "f70ee0f0dcdc17bef7d64a27efef6188",
+    "redirectUri": "http://localhost:5173"
   }
 }
