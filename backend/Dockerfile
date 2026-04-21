@@ -32,6 +32,7 @@ ENV PYTHONPATH=/app
 
 # Pull in the built OpenClaw artifacts from stage 1
 COPY --from=openclaw-build /openclaw/dist          /app/openclaw/dist
+COPY --from=openclaw-build /openclaw/docs          /app/openclaw/docs
 COPY --from=openclaw-build /openclaw/openclaw.mjs  /app/openclaw/openclaw.mjs
 COPY --from=openclaw-build /openclaw/package.json  /app/openclaw/package.json
 COPY --from=openclaw-build /openclaw/node_modules  /app/openclaw/node_modules
