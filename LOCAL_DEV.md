@@ -181,6 +181,43 @@ All settings in `backend/.env`:
 
 ---
 
+## Docker on Accenture-managed Macs
+
+Docker Desktop requires a paid license for enterprise use. On Accenture-managed Macs, Docker Desktop is typically not available without going through an IT procurement process. If `docker compose up --build` fails with a socket error (`/var/run/docker.sock: no such file or directory`) and `open -a Docker` does nothing, Docker Desktop is not installed.
+
+Two license-free alternatives work well as drop-in replacements:
+
+### Option 1 — OrbStack (recommended)
+
+OrbStack is free for personal/dev use, starts faster than Docker Desktop, and auto-configures the Docker socket:
+
+```bash
+brew install orbstack
+```
+
+Open OrbStack from Spotlight or Applications. Once running, `docker` and `docker compose` work immediately — no extra configuration needed.
+
+### Option 2 — Colima (CLI-only, no GUI)
+
+Colima is fully open-source and runs headlessly:
+
+```bash
+brew install colima docker docker-compose
+colima start
+```
+
+To start Colima automatically on login:
+```bash
+brew services start colima
+```
+
+> **Note:** With Colima the socket is at `~/.colima/default/docker.sock`. If `docker compose` can't find the daemon, set the context explicitly:
+> ```bash
+> docker context use colima
+> ```
+
+---
+
 ## Common issues
 
 ### "unauthorized: gateway token mismatch" in Control UI
