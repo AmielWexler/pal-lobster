@@ -1,0 +1,16 @@
+# openclaw build artifacts (regenerated in Stage 1)
+openclaw-src/node_modules
+openclaw-src/dist
+openclaw-src/dist-runtime
+
+# Python
+__pycache__
+**/__pycache__
+*.pyc
+.venv
+
+# Local secrets
+.env
+
+# Git
+.git

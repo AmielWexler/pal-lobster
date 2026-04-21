@@ -4,15 +4,18 @@ FROM --platform=linux/amd64 node:22-bookworm-slim AS openclaw-build
 RUN npm install -g pnpm@10
 
 WORKDIR /openclaw
-# Install deps before copying source for better layer caching
+# Copy lockfile + patches dir before install so frozen-lockfile can verify patch hashes
 COPY openclaw-src/package.json openclaw-src/pnpm-lock.yaml ./
+COPY openclaw-src/patches/ ./patches/
+COPY openclaw-src/scripts/ ./scripts/
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN pnpm install --frozen-lockfile
 
 COPY openclaw-src/ .
 RUN pnpm build && pnpm ui:build && pnpm prune --prod
 
 # ── Stage 2: Python + Node runtime ───────────────────────────────────────────
-FROM --platform=linux/amd64 python:3.11-slim
+FROM --platform=linux/amd64 python:3.11-slim-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl supervisor \
@@ -22,10 +25,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
+COPY requirements.txt pyproject.toml ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+ENV PYTHONPATH=/app
 
 # Pull in the built OpenClaw artifacts from stage 1
 COPY --from=openclaw-build /openclaw/dist          /app/openclaw/dist
