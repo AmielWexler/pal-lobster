@@ -6,6 +6,7 @@ RUN npm install -g pnpm@10
 
 WORKDIR /openclaw
 ENV NODE_OPTIONS="--max-old-space-size=1536"
+ENV CI=true
 
 COPY openclaw-src/ .
 RUN rm -f .git && git init .
