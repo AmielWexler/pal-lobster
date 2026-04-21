@@ -28,7 +28,7 @@ services:
       - ./backend/.env
     environment:
       # Allow the Vite dev server to call this API directly (CORS)
-      - CORS_ORIGINS=http://localhost:5173
+      - CORS_ORIGINS=["http://localhost:5173"]
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
       interval: 10s
