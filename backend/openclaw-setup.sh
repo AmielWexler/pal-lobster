@@ -50,7 +50,7 @@ with open(auth_file, 'w') as f:
     json.dump(store, f, indent=2)
 PYEOF
 
-# Set default model in openclaw.json — preserve existing gateway auth token
+# Set default model + gateway auth token in openclaw.json
 python3 - << PYEOF
 import json, os
 cfg_file = '${STATE_DIR}/openclaw.json'
@@ -59,6 +59,9 @@ if os.path.exists(cfg_file):
     with open(cfg_file) as f:
         cfg = json.load(f)
 cfg.setdefault('agents', {}).setdefault('defaults', {})['model'] = 'openai/gpt-4o'
+token = os.environ.get('OPENCLAW_GATEWAY_TOKEN', '')
+if token:
+    cfg.setdefault('gateway', {}).setdefault('auth', {})['token'] = token
 with open(cfg_file, 'w') as f:
     json.dump(cfg, f, indent=2)
 PYEOF

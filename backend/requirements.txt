@@ -5,4 +5,4 @@ pydantic>=2.7.0
 pydantic-settings>=2.3.0
 websockets>=12.0
 cryptography>=42.0
-# compute-modules>=1.0.0  # Foundry SDK — install separately from Palantir's channel if needed
+foundry-compute-modules==0.6.0

@@ -49,7 +49,7 @@ fi
 # ── OpenClaw env (don't source .env — shell mangles JSON values like CORS_ORIGINS)
 # pydantic-settings reads backend/.env directly. We only need these two for OpenClaw.
 # Override by exporting in your shell before running this script.
-OPENCLAW_GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-local-dev-secret}"
+export OPENCLAW_GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-local-dev-secret}"
 
 # ── Configure OpenClaw for Foundry LLM proxy ──────────────────────────────────
 green "Configuring OpenClaw agent for Foundry LLM proxy..."
