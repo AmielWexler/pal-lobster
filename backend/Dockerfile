@@ -5,16 +5,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 RUN npm install -g pnpm@10
 
 WORKDIR /openclaw
-# Copy lockfile + patches dir before install so frozen-lockfile can verify patch hashes
-COPY openclaw-src/package.json openclaw-src/pnpm-lock.yaml ./
-COPY openclaw-src/patches/ ./patches/
-COPY openclaw-src/scripts/ ./scripts/
 ENV NODE_OPTIONS="--max-old-space-size=1536"
-RUN pnpm install --frozen-lockfile
 
 COPY openclaw-src/ .
 RUN rm -f .git && git init .
-RUN pnpm install --no-frozen-lockfile --prefer-offline
+RUN pnpm install --no-frozen-lockfile
 RUN pnpm build && pnpm ui:build && pnpm prune --prod
 
 # ── Stage 2: Python + Node runtime ───────────────────────────────────────────
