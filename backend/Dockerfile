@@ -1,6 +1,7 @@
 # ── Stage 1: build OpenClaw ──────────────────────────────────────────────────
 FROM --platform=linux/amd64 node:22-bookworm-slim AS openclaw-build
 
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@10
 
 WORKDIR /openclaw
@@ -12,6 +13,8 @@ ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN pnpm install --frozen-lockfile
 
 COPY openclaw-src/ .
+RUN rm -f .git && git init .
+RUN pnpm install --no-frozen-lockfile --prefer-offline
 RUN pnpm build && pnpm ui:build && pnpm prune --prod
 
 # ── Stage 2: Python + Node runtime ───────────────────────────────────────────
